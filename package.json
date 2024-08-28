@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-flow-manager",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "node-red": {
     "nodes": {
       "flow-manager": "flow-manager.js"
