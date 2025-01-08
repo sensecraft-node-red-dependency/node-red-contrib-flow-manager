@@ -51,6 +51,22 @@ async function getNodeList() {
     return await PRIVATERED.runtime.nodes.getNodeList({});
 }
 
+async function iinstallModeList(info) {
+    if (info !== "") {
+        info = JSON.parse(info);
+        let installList = []
+        if (info.length > 0) {
+            const oldNodes = await getNodeList()
+            info.forEach(nn => {
+                oldNodes.forEach(on => {
+                })
+            })
+        }
+        await PRIVATERED.runtime.nodes.getNodeList({});
+    }
+}
+
+
 async function allNpm(flows) {
     const nodes = await getNodeList();
     let result = {
