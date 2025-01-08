@@ -96,11 +96,12 @@ async function allNpm(flows) {
             uniqueModules.push(item);
         }
     });
+
     result.info = JSON.stringify(uniqueModules)
 
 
     // 查找数组中 type 为 npm 的对象的索引
-    const npmIndex = flows.findIndex(item => item.name === "sensecraft-lib");
+    const npmIndex = flows.findIndex(item => item.name === "sensecraft-libs");
 
     if (npmIndex !== -1) {
         flows[npmIndex] = result;
@@ -109,7 +110,7 @@ async function allNpm(flows) {
     }
 
 
-    return flows
+    return {flows: flows, sensecraft: result}
 }
 
 
@@ -118,17 +119,21 @@ const originalSaveFlows = PRIVATERED.runtime.storage.saveFlows;
 PRIVATERED.runtime.storage.saveFlows = async function newSaveFlows(data) {
     if (data.flows && data.flows.length) {
         // 从nodes 中提取所需的npm 包
-        data.flows = await allNpm(data.flows)
+        let infoList = await allNpm(data.flows)
+        data.flows = infoList.flows
 
         function getFlowFilePath(flowDetails) {
             let folderName;
-            if (flowDetails.type === 'subflow') folderName = 'subflows'; else if (flowDetails.type === 'tab') folderName = 'flows'; else folderName = '.';
+            if (flowDetails.type === 'subflow') folderName = 'subflows'; else if (flowDetails.type === 'tab') folderName = 'flows'; else if (flowDetails.name = "sensecraft-libs") folderName = 'sensecraft-libs'; else folderName = '.';
 
             const flowsDir = path.resolve(directories.basePath, folderName);
             const flowName = flowDetails.type === 'global' ? 'config-nodes' : flowDetails.name; // if it's a subflow, then the correct property is 'name'
             const flowFilePath = path.join(flowsDir, encodeFileName(flowName) + '.' + flowManagerSettings.fileFormat);
             return flowFilePath;
         }
+
+        const sensecraftPath = getFlowFilePath(infoList.sensecraft);
+        await writeFlowFile(sensecraftPath, infoList.sensecraft);
 
         const loadedFlowAndSubflowNames = {};
         const envNodePropsChangedByUser = {};
@@ -981,6 +986,8 @@ async function main() {
 
     RED.httpAdmin.post('/' + nodeName + '/states', RED.auth.needsPermission("flows.write"), async function loadFlowsOnDemand(req, res) {
         try {
+
+
             if (!isObject(req.body) || !req.body.action) return res.status(400).send({"error": 'missing "action" key'});
 
             const allFlows = await readAllFlowFileNamesWithoutExt('flow');
@@ -1120,7 +1127,15 @@ async function main() {
                     return res.status(404).send({error: "Flow file not found"});
                 }
 
-                const str = (await readFlowFile(fullPath, true)).str;
+                let str = (await readFlowFile(fullPath, true)).str;
+                const libs = (await readFlowFile(directories.basePath + "/sensecraft-libs/sensecraft-libs.json", true)).str
+                console.log(libs)
+                console.log(libs.length > 0)
+                if (libs.length > 0) {
+                    let jsonSrt = JSON.parse(str);
+                    jsonSrt.push(JSON.parse(libs));
+                    str = JSON.stringify(jsonSrt);
+                }
                 if (req.headers.accept === 'text/plain') {
                     return res.contentType('text/plain').send(str);
                 } else {
@@ -1128,7 +1143,6 @@ async function main() {
                 }
 
             } else if (req.method === 'POST') {
-                console.log(req.body);
                 await writeFlowFile(fullPath, req.body);
                 const mtime = req.query.mtime;
                 const atime = req.query.atime;
