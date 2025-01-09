@@ -95,7 +95,7 @@ async function allNpm(flows) {
 
         nodes.forEach(node => {
             node.types.forEach(type => {
-                if (flow.type === type) {
+                if (flow.type === type && node.module !== "node-red") {
                     const flowRev = calculateRevision(node.version)
                     let nodeInfo = {
                         enabled: node.enabled,
@@ -969,7 +969,6 @@ async function main() {
     RED.httpAdmin.all('/' + nodeName + '/remotes/:remoteName/**', [RED.auth.needsPermission("flows.read"), RED.auth.needsPermission("flows.write"), bodyParser.text({
         limit: "50mb", type: '*/*'
     })], async function (req, res) {
-
         try {
             const remote = flowManagerSettings.remoteDeploy.remotes.find(remote => remote.name === req.params.remoteName);
             if (!remote) {
@@ -977,6 +976,7 @@ async function main() {
             }
 
             const toCutAfter = `/flow-manager/remotes/${req.params.remoteName}`;
+
             const appendUrl = req.url.substring(req.url.indexOf(toCutAfter) + toCutAfter.length);
 
             const nrAddressWithSlash = remote.nrAddress.endsWith('/') ? remote.nrAddress : (remote.nrAddress + '/');
@@ -990,7 +990,6 @@ async function main() {
                 data: req.body,
                 transformResponse: [] // Disabling force json parsing
             })
-
             if (req.headers.accept === 'text/plain') {
                 res = res.contentType('text/plain');
             } else {
