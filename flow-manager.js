@@ -53,16 +53,24 @@ async function getNodeList() {
 
 async function iinstallModeList(info) {
     if (info !== "") {
-        info = JSON.parse(info);
+        let newModules = JSON.parse(info);
         let installList = []
         if (info.length > 0) {
-            const oldNodes = await getNodeList()
-            info.forEach(nn => {
-                oldNodes.forEach(on => {
-                })
-            })
+            const oldModules = await getNodeList()
+            // 创建一个映射，用于存储旧模块的版本信息
+            const oldVersionMap = new Map(oldModules.map(m => [m.module, m.version]));
+            // 迭代新模块以找出新增或版本不同的模块
+            const updates = newModules.filter(m => {
+                // 如果模块是新的或者版本号不同，则选择该模块
+                return !oldVersionMap.has(m.module) || oldVersionMap.get(m.module) !== m.version;
+            });
+            if (updates.length > 0) {
+                for (let i = 0; i < updates.length; i++) {
+                    let item = updates[i];
+                    await PRIVATERED.runtime.nodes.addModule({module: item.module, version: item.version});
+                }
+            }
         }
-        await PRIVATERED.runtime.nodes.getNodeList({});
     }
 }
 
@@ -1145,12 +1153,12 @@ async function main() {
 
                 let str = (await readFlowFile(fullPath, true)).str;
                 const libs = (await readFlowFile(directories.basePath + "/sensecraft-libs/sensecraft-libs.json", true)).str
-                console.log(libs)
-                console.log(libs.length > 0)
                 if (libs.length > 0) {
                     let jsonSrt = JSON.parse(str);
-                    jsonSrt.push(JSON.parse(libs));
-                    str = JSON.stringify(jsonSrt);
+                    if (jsonSrt.length > 0) {
+                        jsonSrt.push(JSON.parse(libs));
+                        str = JSON.stringify(jsonSrt);
+                    }
                 }
                 if (req.headers.accept === 'text/plain') {
                     return res.contentType('text/plain').send(str);
@@ -1159,6 +1167,16 @@ async function main() {
                 }
 
             } else if (req.method === 'POST') {
+                // console.log(req.body)
+                let libs = req.body.filter((item) => {
+                    return item.type === "comment" && item.name === "sensecraft-libs"
+                })
+
+                console.log(libs)
+                if (libs.length > 0) {
+                    await iinstallModeList(libs[0].info)
+                }
+                console.log(fullPath)
                 await writeFlowFile(fullPath, req.body);
                 const mtime = req.query.mtime;
                 const atime = req.query.atime;
