@@ -1076,44 +1076,6 @@ async function main() {
         }
     });
 
-// 文件上传处理函数
-    async function handleFileUpload(req, res) {
-        try {
-            const formData = req.files[0]; // 获取上传的文件
-            const applicationId = req.params.applicationId;
-
-            if (!formData) {
-                return res.status(400).send({error: "No form data provided"});
-            }
-
-            if (!applicationId) {
-                return res.status(400).send({error: "No application ID provided"});
-            }
-
-            // 获取文件名（字段名）和文件内容
-            const key = formData.fieldname;
-            const fileContent = formData.buffer;
-
-            // 确保目录存在
-            const uploadPath = path.join(directories.basePath, 'flow_static', applicationId);
-            await fs.ensureDir(uploadPath);
-
-            // 保存文件
-            const filePath = path.join(uploadPath, key);
-            await fs.writeFile(filePath, fileContent);
-
-            res.send({
-                status: "ok", path: filePath, message: 'File uploaded successfully'
-            });
-
-        } catch (err) {
-            RED.log.error(`Error uploading file: ${err.toString()}`);
-            res.status(500).send({
-                status: 'error', message: err.toString()
-            });
-        }
-    }
-
     async function handleFlowFile(req, res) {
         try {
             const type = req.params.type;
