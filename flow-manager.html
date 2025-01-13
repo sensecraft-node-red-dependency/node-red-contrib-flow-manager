@@ -37,7 +37,7 @@
         }
 
         function paramObj(url) {
-            url = url.slice(0, url.indexOf('#flow'))
+            if (url.indexOf('#flow') != -1) url = url.slice(0, url.indexOf('#flow'))
             const search = url.split('?')[1]
             if (!search) { return {} }
             return JSON.parse(
@@ -62,7 +62,6 @@
                     url: targetUrl,
                     dataType: 'json', // 指定数据类型为JSON
                     method: 'GET',
-                    data: JSON.stringify({ "action": "reloadOnly" }),
                     contentType: "application/json; charset=utf-8"
                 });
                 targetJson = data;
@@ -212,13 +211,14 @@
                     const localFileState = flowType === 'global' ? opts.localState[flowType] : opts.localState[flowType][flowName];
                     const remoteFileState = flowType === 'global' ? opts.remoteState[flowType] : opts.remoteState[flowType][flowName];
 
-                    let status, statusColor, forceChecked = false, action, actionDesc;
+                    let status, statusColor, forceChecked = false, isChecked = false, action, actionDesc;
                     if (!localFileState && remoteFileState) {
                         actionDesc = 'add';
                         status = "Missing in local";
                         statusColor = '#8CC020';
                         action = 'POST';
                         forceChecked = false;
+                        isChecked = true;
                     } else if (localFileState && !remoteFileState) {
                         // Actions are already available locally and do not need to be operated
                         action = null;
@@ -231,6 +231,7 @@
                                 actionDesc = 'update';
                                 status = "Remote file is newer";
                                 statusColor = '#f5e15b';
+                                isChecked = true;
                             } else if (remoteDate < localDate) {
                                 actionDesc = 'overwrite ⚠️';
                                 status = "Local file is newer"; // "Danger" tell use he will override more recent change
@@ -267,7 +268,7 @@
                         const inputId = `flow-manager-diff-action-${flowType}${flowName ? ('-' + flowName) : ''}`
                         rowsContainerElementForType.append(`
                             <tr ${statusColor ? 'style="background-color: ' + statusColor + '"' : ''}>
-                                <td style="text-align: left"><input id="${inputId}" ${forceChecked ? 'disabled' : ''} ${forceChecked ? 'checked' : ''} type="checkbox" data-mtime="${lMtime}" data-remoteName="${opts.remoteName}" data-action="${action}" data-flowName="${flowName}" data-flowType="${flowType}"><label for="${inputId}">${actionDesc}</label></td>
+                                <td style="text-align: left"><input id="${inputId}" ${forceChecked ? 'disabled' : ''} ${forceChecked || isChecked ? 'checked' : ''} type="checkbox" data-mtime="${lMtime}" data-remoteName="${opts.remoteName}" data-action="${action}" data-flowName="${flowName}" data-flowType="${flowType}"><label for="${inputId}">${actionDesc}</label></td>
                                 <td>${flowName}</td>
                                 <td>${status}</td>
                                 <td onclick="javascript:alert('Local Rev Checksum: ${lRev}')">${lMtime}</td>
