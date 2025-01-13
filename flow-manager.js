@@ -1176,6 +1176,54 @@ async function main() {
         res.send({"path": directories.basePath});
     });
 
+
+    // 从flow 解析成state
+    RED.httpAdmin.post('/' + nodeName + '/applicaiton/sate/:applicaitonId', RED.auth.needsPermission("flows.read"), async function (req, res) {
+        const applicaitonId = req.params.applicaitonId
+        if (!applicaitonId) {
+            res.status(400).send({error: "applicaiton id not found"});
+        }
+        const input = req.body
+        if (input.length === 0) {
+            res.status(400).send({error: "Flow file not found"});
+        }
+        const output = {
+            flow: {}, subflow: {}, global: {
+                deployed: true,
+                rev: "d751713988987e9331980363e24189ce",
+                mtime: "2025-01-09T06:30:44.558Z",
+                hasUpdate: false
+            }
+        };
+        input.forEach(item => {
+            if (item.type === 'tab') {
+                output.flow[item.label] = {
+                    deployed: true, onDemand: false, rev: "", // You need to generate or define the revision id
+                    mtime: new Date().toISOString(), // You can adjust the mtime as needed
+                    hasUpdate: false
+                };
+            } else if (item.type === 'subflow') {
+                output.subflow[item.name] = {
+                    deployed: true, rev: "", // You need to generate or define the revision id
+                    mtime: new Date().toISOString(), // You can adjust the mtime as needed
+                    hasUpdate: false
+                };
+            }
+            // Add more conditions if there are other types that need to be handled
+        });
+
+        // For demonstration, assign a dummy revision id for each tab and subflow
+        Object.keys(output.flow).forEach(key => {
+            output.flow[key].rev = "dummy-revision-id-for-flow";
+        });
+        Object.keys(output.subflow).forEach(key => {
+            output.subflow[key].rev = "dummy-revision-id-for-subflow";
+        });
+
+        res.status(200).send(output);
+    });
+
+
     initialLoadPromise.resolve();
     initialLoadPromise = null;
 }
