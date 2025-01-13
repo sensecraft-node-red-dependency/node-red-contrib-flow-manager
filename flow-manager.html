@@ -3,25 +3,25 @@
         line-height: 30px !important;
     }
 
-    .flow-manager-diff-type {
+    .mission-manager-diff-type {
         background-color: #ffffff;
         font-size: large;
         text-decoration: underline;
     }
 
-    #flow-manager-remote-diff-dialog {
+    #mission-manager-remote-diff-dialog {
         max-height: 94vh !important;
     }
 
-    #flow-manager-remote-diff-dialog table,
-    #flow-manager-remote-diff-dialog td,
-    #flow-manager-remote-diff-dialog th {
+    #mission-manager-remote-diff-dialog table,
+    #mission-manager-remote-diff-dialog td,
+    #mission-manager-remote-diff-dialog th {
         border: 1pt #3e3e3e solid;
         padding: 5pt;
         white-space: nowrap;
     }
 
-    .flow-manager-remote-diff-field-header {
+    .mission-manager-remote-diff-field-header {
         font-size: large;
     }
 </style>
@@ -51,6 +51,50 @@
             )
         }
 
+        const apiUrl = {
+            getDeviceInfo: {
+                url: 'http://192.168.118.71:8090/device/info',
+                method: 'GET'
+            },
+            getLocalState: {
+                url: 'flow-manager/states/',
+                method: 'GET'
+            },
+            getRemoteState: {
+                url: 'flow-manager/applicaiton/sate/',
+                method: 'POST',
+            }
+        }
+
+        async function getdeviceInfo() {
+            try {
+                // get device info
+                const deviceInfo = await ajax({
+                    url: apiUrl.getDeviceInfo.url,
+                    method: apiUrl.getDeviceInfo.method,
+                    contentType: "application/json; charset=utf-8"
+                })
+                if (deviceInfo && deviceInfo.result) {
+                    const _nr1Header = $('ul.red-ui-header-toolbar');
+                    const prependInfo = `
+                    <div style="padding: 0 10px; line-height: 20px; text-align: right;">
+                        <div style="color: #8cc020; font-size: 12px; border-bottom: 1px dashed #888888">IP: ${deviceInfo.result && deviceInfo.result.ip}</div>
+                        <div style="color: #8cc020; font-size: 12px;">SN: ${deviceInfo.result && deviceInfo.result.sn}</div>
+                    </div>`
+                    if (_nr1Header.length) {
+                        _nr1Header.prepend(prependInfo)
+                    } else {
+                        $('.header-toolbar').prepend(prependInfo)
+                    }
+                    console.log(deviceInfo, 'deviceInfo')
+                }
+            } catch (error) {
+                alert('Failed to get device information')
+            }
+        }
+
+        getdeviceInfo()
+
         const queryObj = await paramObj(window.location.href)
 
         let targetJson = null;
@@ -76,36 +120,36 @@
 
         // Add diff popup
         $('body').prepend(`
-            <div id="flow-manager-remote-diff-dialog" style="width: auto; text-align: center">
-                <div id="flow-manager-remote-no-diff" style="color: darkgreen">No differences were found.</div>
-                <div id="flow-manager-remote-diff-controllers">
-                    <button id="flow-manager-remote-diff-toggle-all" class="ui-button ui-widget ui-corner-all" href="#">Toggle all actions</button>
+            <div id="mission-manager-remote-diff-dialog" style="width: auto; text-align: center">
+                <div id="mission-manager-remote-no-diff" style="color: darkgreen">No differences were found.</div>
+                <div id="mission-manager-remote-diff-controllers">
+                    <button id="mission-manager-remote-diff-toggle-all" class="ui-button ui-widget ui-corner-all" href="#">Toggle all actions</button>
                     <br/><br/>
 
                     <table style="border-color: #7c9cec; border-width: 2px;">
                         <thead style="background-color: #666; color: #fff !important">
                             <tr>
-                                <td class="flow-manager-remote-diff-field-header">Action</td>
-                                <td class="flow-manager-remote-diff-field-header">Name</td>
-                                <td class="flow-manager-remote-diff-field-header">Status</td>
-                                <td class="flow-manager-remote-diff-field-header">Modified Time</td>
-                                <td class="flow-manager-remote-diff-field-header">Remote Modified Time</td>
+                                <td class="mission-manager-remote-diff-field-header">Action</td>
+                                <td class="mission-manager-remote-diff-field-header">Name</td>
+                                <td class="mission-manager-remote-diff-field-header">Status</td>
+                                <td class="mission-manager-remote-diff-field-header">Modified Time</td>
+                                <td class="mission-manager-remote-diff-field-header">Remote Modified Time</td>
                             </tr>
                         </thead>
 
-                        <tbody><tr><td colspan="6" class="flow-manager-diff-type" id="flow-manager-diff-type-flow" style="background:#fff">Flows</td></tr></tbody>
-                        <tbody id="flow-manager-diff-flow"></tbody>
-                        <tr><td colspan="6" class="flow-manager-diff-type" id="flow-manager-diff-type-subflow">Subflows</td></tr></tbody>
-                        <tbody id="flow-manager-diff-subflow"></tbody>
-                        <tbody><tr><td colspan="6" class="flow-manager-diff-type" id="flow-manager-diff-type-global">Global</tr></tbody>
-                        <tbody id="flow-manager-diff-global"></tbody>
+                        <tbody><tr><td colspan="6" class="mission-manager-diff-type" id="mission-manager-diff-type-flow" style="background:#fff">Flows</td></tr></tbody>
+                        <tbody id="mission-manager-diff-flow"></tbody>
+                        <tr><td colspan="6" class="mission-manager-diff-type" id="mission-manager-diff-type-subflow">Subflows</td></tr></tbody>
+                        <tbody id="mission-manager-diff-subflow"></tbody>
+                        <tbody><tr><td colspan="6" class="mission-manager-diff-type" id="mission-manager-diff-type-global">Global</tr></tbody>
+                        <tbody id="mission-manager-diff-global"></tbody>
                     </table>
-                    <br/><button id="flow-manager-remote-diff-push-button" class="ui-button ui-widget ui-corner-all" href="#" style="background: #3c7eff !important; color: #fff !important">Apply Selected Actions</button>
+                    <br/><button id="mission-manager-remote-diff-push-button" class="ui-button ui-widget ui-corner-all" href="#" style="background: #3c7eff !important; color: #fff !important">Apply Selected Actions</button>
                 </div>
             </div>`);
 
-        $('#flow-manager-remote-diff-toggle-all').click(function () {
-            const inputs = $('#flow-manager-remote-diff-dialog input');
+        $('#mission-manager-remote-diff-toggle-all').click(function () {
+            const inputs = $('#mission-manager-remote-diff-dialog input');
 
             let allSelected = true
             for (const input of inputs) {
@@ -121,10 +165,10 @@
         });
 
 
-        // $('#flow-manager-remote-diff-push-button').click(async function () {
-        //     $("#flow-manager-push-progress-dialog").dialog({ title: 'Push in progress...', modal: true });
+        // $('#mission-manager-remote-diff-push-button').click(async function () {
+        //     $("#mission-manager-push-progress-dialog").dialog({ title: 'Push in progress...', modal: true });
 
-        //     const inputs = $('#flow-manager-remote-diff-dialog input');
+        //     const inputs = $('#mission-manager-remote-diff-dialog input');
         //     let remoteNameToDeploy = null;
         //     let progress = 0;
         //     for (const input of inputs) {
@@ -152,7 +196,7 @@
         //         })
 
         //         try {
-        //             $('#flow-manager-push-progress-label').text(`${action}ing ${flowType} ${flowName || ''}`);
+        //             $('#fmission-manager-push-progress-label').text(`${action}ing ${flowType} ${flowName || ''}`);
 
         //             await ajax({
         //                 url: remoteUrl,
@@ -168,11 +212,11 @@
         //             alert(`Failed to ${action} file ${flowType} ${flowName || ''}, Discontinuing.`);
         //             break;
         //         }
-        //         $("#flow-manager-push-progress-progressbar").progressbar({ value: (progress / (inputs.length + 1)) * 100 });
+        //         $("#mission-manager-push-progress-progressbar").progressbar({ value: (progress / (inputs.length + 1)) * 100 });
         //     }
 
         //     if (remoteNameToDeploy) {
-        //         $('#flow-manager-push-progress-label').text(`Deploying changes to ${remoteNameToDeploy}...`);
+        //         $('#mission-manager-push-progress-label').text(`Deploying changes to ${remoteNameToDeploy}...`);
         //         try {
         //             await ajax({
         //                 url: `flow-manager/remotes/${remoteNameToDeploy}/states`,
@@ -183,12 +227,12 @@
         //             });
         //         } catch (e) { }
 
-        //         $("#flow-manager-push-progress-progressbar").progressbar({ value: 100 });
+        //         $("#mission-manager-push-progress-progressbar").progressbar({ value: 100 });
         //     }
 
-        //     $("#flow-manager-push-progress-dialog").dialog('close');
+        //     $("#mission-manager-push-progress-dialog").dialog('close');
 
-        //     $("#flow-manager-remote-diff-dialog").dialog('close');
+        //     $("#mission-manager-remote-diff-dialog").dialog('close');
         // });
 
         function prepareDiffTable(opts) {
@@ -199,7 +243,7 @@
 
                 let foundDifferencesInThisType = false;
 
-                const rowsContainerElementForType = $(`#flow-manager-diff-${flowType}`);
+                const rowsContainerElementForType = $(`#mission-manager-diff-${flowType}`);
                 rowsContainerElementForType.empty()
 
                 const allFlowFileNamesFromBoth =
@@ -265,7 +309,7 @@
                         const lRev = localFileState ? localFileState.rev : '';
                         const rRev = remoteFileState ? remoteFileState.rev : '';
 
-                        const inputId = `flow-manager-diff-action-${flowType}${flowName ? ('-' + flowName) : ''}`
+                        const inputId = `mission-manager-diff-action-${flowType}${flowName ? ('-' + flowName) : ''}`
                         rowsContainerElementForType.append(`
                             <tr ${statusColor ? 'style="background-color: ' + statusColor + '"' : ''}>
                                 <td style="text-align: left"><input id="${inputId}" ${forceChecked ? 'disabled' : ''} ${forceChecked || isChecked ? 'checked' : ''} type="checkbox" data-mtime="${lMtime}" data-remoteName="${opts.remoteName}" data-action="${action}" data-flowName="${flowName}" data-flowType="${flowType}"><label for="${inputId}">${actionDesc}</label></td>
@@ -278,25 +322,25 @@
                     }
                 })
 
-                $(`#flow-manager-diff-type-${flowType}`).css('display', foundDifferencesInThisType ? '' : 'none');
+                $(`#mission-manager-diff-type-${flowType}`).css('display', foundDifferencesInThisType ? '' : 'none');
 
             })
 
-            $('#flow-manager-remote-diff-dialog').dialog({
+            $('#mission-manager-remote-diff-dialog').dialog({
                 title: `Please select the actions to apply to your Node-RED`,
                 height: 'auto', width: 'auto'
             });
 
 
-            $('#flow-manager-remote-diff-controllers').css('display', foundDifferencesInAnyType ? '' : 'none')
-            $('#flow-manager-remote-no-diff').css('display', foundDifferencesInAnyType ? 'none' : '')
-            if (!foundDifferencesInAnyType) $("#flow-manager-remote-diff-dialog").dialog('close');
+            $('#mission-manager-remote-diff-controllers').css('display', foundDifferencesInAnyType ? '' : 'none')
+            $('#mission-manager-remote-no-diff').css('display', foundDifferencesInAnyType ? 'none' : '')
+            if (!foundDifferencesInAnyType) $("#mission-manager-remote-diff-dialog").dialog('close');
         }
 
 
-        const progressDialog = $("#flow-manager-push-progress-dialog");
-        const progressLabel = $('#flow-manager-push-progress-label');
-        const progressBar = $('#flow-manager-push-progress-progressbar');
+        const progressDialog = $("#mission-manager-push-progress-dialog");
+        const progressLabel = $('#mission-manager-push-progress-label');
+        const progressBar = $('#mission-manager-push-progress-progressbar');
 
         progressDialog.dialog({ title: 'Loading & Comparing states', modal: true });
         progressLabel.text('');
@@ -304,18 +348,18 @@
 
         try {
             progressLabel.text('Retrieving Local State');
-            const localState = await ajax({ url: 'flow-manager/states/' });
+            const localState = await ajax({ url: apiUrl.getLocalState.url });
             progressBar.progressbar({ value: 50 });
 
             progressLabel.text('Retrieving Remote State');
             try {
                 const remoteState = await ajax({
-                    url: `flow-manager/applicaiton/sate/${queryObj.appId}`,
-                    method: 'POST',
+                    url: apiUrl.getRemoteState.url + `${queryObj.appId}`,
+                    method: apiUrl.getRemoteState.method,
                     data: JSON.stringify(targetJson),
                     contentType: 'application/json',
                 });
-                $('#flow-manager-remote-dialog').dialog('close');
+                $('#mission-manager-remote-dialog').dialog('close');
 
                 progressBar.progressbar({ value: 100 });
 
