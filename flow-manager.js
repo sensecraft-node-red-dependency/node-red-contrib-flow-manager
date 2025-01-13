@@ -1076,44 +1076,6 @@ async function main() {
         }
     });
 
-// 文件上传处理函数
-    async function handleFileUpload(req, res) {
-        try {
-            const formData = req.files[0]; // 获取上传的文件
-            const applicationId = req.params.applicationId;
-
-            if (!formData) {
-                return res.status(400).send({error: "No form data provided"});
-            }
-
-            if (!applicationId) {
-                return res.status(400).send({error: "No application ID provided"});
-            }
-
-            // 获取文件名（字段名）和文件内容
-            const key = formData.fieldname;
-            const fileContent = formData.buffer;
-
-            // 确保目录存在
-            const uploadPath = path.join(directories.basePath, 'flow_static', applicationId);
-            await fs.ensureDir(uploadPath);
-
-            // 保存文件
-            const filePath = path.join(uploadPath, key);
-            await fs.writeFile(filePath, fileContent);
-
-            res.send({
-                status: "ok", path: filePath, message: 'File uploaded successfully'
-            });
-
-        } catch (err) {
-            RED.log.error(`Error uploading file: ${err.toString()}`);
-            res.status(500).send({
-                status: 'error', message: err.toString()
-            });
-        }
-    }
-
     async function handleFlowFile(req, res) {
         try {
             const type = req.params.type;
@@ -1213,6 +1175,54 @@ async function main() {
     RED.httpAdmin.get('/' + nodeName + '/status', RED.auth.needsPermission("flows.read"), async function (req, res) {
         res.send({"path": directories.basePath});
     });
+
+
+    // 从flow 解析成state
+    RED.httpAdmin.post('/' + nodeName + '/applicaiton/sate/:applicaitonId', RED.auth.needsPermission("flows.read"), async function (req, res) {
+        const applicaitonId = req.params.applicaitonId
+        if (!applicaitonId) {
+            res.status(400).send({error: "applicaiton id not found"});
+        }
+        const input = req.body
+        if (input.length === 0) {
+            res.status(400).send({error: "Flow file not found"});
+        }
+        const output = {
+            flow: {}, subflow: {}, global: {
+                deployed: true,
+                rev: "d751713988987e9331980363e24189ce",
+                mtime: "2025-01-09T06:30:44.558Z",
+                hasUpdate: false
+            }
+        };
+        input.forEach(item => {
+            if (item.type === 'tab') {
+                output.flow[item.label] = {
+                    deployed: true, onDemand: false, rev: "", // You need to generate or define the revision id
+                    mtime: new Date().toISOString(), // You can adjust the mtime as needed
+                    hasUpdate: false
+                };
+            } else if (item.type === 'subflow') {
+                output.subflow[item.name] = {
+                    deployed: true, rev: "", // You need to generate or define the revision id
+                    mtime: new Date().toISOString(), // You can adjust the mtime as needed
+                    hasUpdate: false
+                };
+            }
+            // Add more conditions if there are other types that need to be handled
+        });
+
+        // For demonstration, assign a dummy revision id for each tab and subflow
+        Object.keys(output.flow).forEach(key => {
+            output.flow[key].rev = "dummy-revision-id-for-flow";
+        });
+        Object.keys(output.subflow).forEach(key => {
+            output.subflow[key].rev = "dummy-revision-id-for-subflow";
+        });
+
+        res.status(200).send(output);
+    });
+
 
     initialLoadPromise.resolve();
     initialLoadPromise = null;
