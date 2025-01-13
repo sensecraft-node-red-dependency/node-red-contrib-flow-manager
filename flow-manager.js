@@ -1184,7 +1184,7 @@ async function main() {
             res.status(400).send({error: "applicaiton id not found"});
         }
         const input = req.body
-        if (input.length === 0) {
+        if (input.length === 0 || !input) {
             res.status(400).send({error: "Flow file not found"});
         }
         const output = {
