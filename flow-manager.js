@@ -52,6 +52,8 @@ async function getNodeList() {
 }
 
 async function iinstallModeList(info) {
+    let update_flag = false; // 初始化update_flag为false
+
     if (info !== "") {
         let newModules = JSON.parse(info);
         let installList = []
@@ -61,14 +63,23 @@ async function iinstallModeList(info) {
             const oldVersionMap = new Map(oldModules.map(m => [m.module, m.version]));
             // 迭代新模块以找出新增或版本不同的模块
             const updates = newModules.filter(m => {
-                // 如果模块是新的或者版本号不同，则选择该模块
-                return !oldVersionMap.has(m.module) || oldVersionMap.get(m.module) !== m.version;
+                const isNewOrUpdated = !oldVersionMap.has(m.module) || oldVersionMap.get(m.module) !== m.version;
+                if (oldVersionMap.get(m.module) !== m.version && !update_flag) {
+                    update_flag = true;
+                }
+                return isNewOrUpdated;
             });
             if (updates.length > 0) {
                 for (let i = 0; i < updates.length; i++) {
                     let item = updates[i];
                     await PRIVATERED.runtime.nodes.addModule({module: item.module, version: item.version});
+
                 }
+            }
+            if (updates.length > 0 && update_flag) {
+                // 发送消息
+                console.log("node red need to restart")
+                RED.comms.publish('flow-manager/flow-manager-envnodes-npm-update', {npm_update: true});
             }
         }
     }
