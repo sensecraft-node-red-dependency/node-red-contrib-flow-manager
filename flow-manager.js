@@ -1139,16 +1139,15 @@ async function main() {
                 }
 
             } else if (req.method === 'POST') {
-                // console.log(req.body)
-                let libs = req.body.filter((item) => {
-                    return item.type === "comment" && item.name === "sensecraft-libs"
-                })
+                if (Array.isArray(req.body)) {
+                    let libs = req.body.filter((item) => {
+                        return item.type === "comment" && item.name === "sensecraft-libs"
+                    })
 
-                console.log(libs)
-                if (libs.length > 0) {
-                    await iinstallModeList(libs[0].info)
+                    if (libs.length > 0) {
+                        await iinstallModeList(libs[0].info)
+                    }
                 }
-                console.log(fullPath)
                 await writeFlowFile(fullPath, req.body);
                 const mtime = req.query.mtime;
                 const atime = req.query.atime;
@@ -1202,7 +1201,7 @@ async function main() {
             flow: {}, subflow: {}, global: {
                 deployed: true,
                 rev: "d751713988987e9331980363e24189ce",
-                mtime: "2025-01-09T06:30:44.558Z",
+                mtime: new Date().toISOString(),
                 hasUpdate: false
             }
         };
@@ -1232,6 +1231,38 @@ async function main() {
         });
 
         res.status(200).send(output);
+    });
+
+    // 从flow 解析成state
+    RED.httpAdmin.post('/' + nodeName + '/applicaiton/:type/:fileName', RED.auth.needsPermission("flows.read"), async function (req, res) {
+        const type = req.params.type
+        const fileName = req.params.fileName
+        const body = req.body
+
+        console.log(type)
+        console.log(fileName)
+
+        if (!fileName || fileName.indexOf('..') !== -1 || fileName.indexOf('/') !== -1 || fileName.indexOf('\\') !== -1 || !type || !body || body.length === 0 || !fileName) {
+            return res.status(400).send({error: "Flow file illegal"});
+        }
+        let result = []
+        switch (type) {
+            case 'flows':
+                var tabObject = body.find(item => item.type === "tab" && item.label === fileName);
+                result = tabObject ? [tabObject].concat(body.filter(item => item.z === tabObject.id)) : [];
+                break;
+            case 'subflow':
+                var tabObject = body.find(item => item.type === "subflow" && item.name === fileName);
+                // 如果找到了tabObject，则过滤出所有z属性等于tabObject.id的对象，并包括tabObject本身
+                result = tabObject ? [tabObject].concat(body.filter(item => item.z === tabObject.id)) : [];
+                break
+            case 'global':
+                break
+            default:
+                break
+        }
+
+        res.status(200).send(result);
     });
 
 
