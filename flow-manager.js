@@ -21,6 +21,20 @@ function encodeFileName(origName) {
     // Characters not allowed: \ / : * ? " < > |
 }
 
+function changeTime(inputString) {
+
+    let timestampString = inputString.match(/\d+/)[0];
+
+    let timestamp = parseInt(timestampString, 10);
+
+
+    let date = new Date(timestamp);
+
+    return date.toISOString()
+
+}
+
+
 function stringifyFormattedFileJson(nodes) {
     const str = JSON.stringify(nodes, undefined, 2);
     return eol.auto(str);
@@ -88,21 +102,22 @@ async function iinstallModeList(info) {
 
 async function allNpm(flows) {
     const nodes = await getNodeList();
+    const now = new Date().valueOf()
     let result = {
-        "id": "9999999999999999",
+        "id": `sensecraft${now}`,
         "type": "comment",
-        "name": "sensecraft-lib",
+        "name": "sensecraft-libs",
         "info": [],
         "x": 2005,
         "y": 7980,
         "wires": [],
-        "l": false
+        "l": false,
     }
     flows.forEach(flow => {
         if (flow.type === "tab") {
             result.z = flow.id
         }
-        const now = new Date();
+        // const now = new Date();
 
         nodes.forEach(node => {
             node.types.forEach(type => {
@@ -113,9 +128,8 @@ async function allNpm(flows) {
                         local: node.local,
                         user: node.user,
                         version: node.version,
-                        module: node.module,
-                        rev: flowRev,
-                        mtime: now.toISOString()
+                        module: node.module, // rev: flowRev,
+                        // mtime: now.toISOString()
                     }
                     result.info.push(nodeInfo);
                 }
@@ -1197,25 +1211,29 @@ async function main() {
         if (input.length === 0 || !input) {
             res.status(400).send({error: "Flow file not found"});
         }
+        let libsMod = input.filter((item) => {
+            return item.name === "sensecraft-libs"
+        })
+        let mtime = new Date().toISOString()
+        if (libsMod?.id) {
+            mtime = changeTime(libsMod.id)
+        }
         const output = {
             flow: {}, subflow: {}, global: {
-                deployed: true,
-                rev: "d751713988987e9331980363e24189ce",
-                mtime: new Date().toISOString(),
-                hasUpdate: false
+                deployed: true, rev: "d751713988987e9331980363e24189ce", mtime: mtime, hasUpdate: false
             }
         };
         input.forEach(item => {
             if (item.type === 'tab') {
                 output.flow[item.label] = {
                     deployed: true, onDemand: false, rev: "", // You need to generate or define the revision id
-                    mtime: new Date().toISOString(), // You can adjust the mtime as needed
+                    mtime: mtime, // You can adjust the mtime as needed
                     hasUpdate: false
                 };
             } else if (item.type === 'subflow') {
                 output.subflow[item.name] = {
                     deployed: true, rev: "", // You need to generate or define the revision id
-                    mtime: new Date().toISOString(), // You can adjust the mtime as needed
+                    mtime: mtime, // You can adjust the mtime as needed
                     hasUpdate: false
                 };
             }
@@ -1224,10 +1242,10 @@ async function main() {
 
         // For demonstration, assign a dummy revision id for each tab and subflow
         Object.keys(output.flow).forEach(key => {
-            output.flow[key].rev = "dummy-revision-id-for-flow";
+            output.flow[key].rev = "d751713988987e9331980363e24189ce";
         });
         Object.keys(output.subflow).forEach(key => {
-            output.subflow[key].rev = "dummy-revision-id-for-subflow";
+            output.subflow[key].rev = "d751713988987e9331980363e24189ce";
         });
 
         res.status(200).send(output);
