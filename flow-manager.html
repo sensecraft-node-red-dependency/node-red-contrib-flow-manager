@@ -21,6 +21,10 @@
         white-space: nowrap;
     }
 
+    #mission-manager-remote-diff-dialog td {
+        min-width: 200px;
+    }
+
     .mission-manager-remote-diff-field-header {
         font-size: large;
     }
@@ -142,17 +146,14 @@
                             <tr>
                                 <td class="mission-manager-remote-diff-field-header">Action</td>
                                 <td class="mission-manager-remote-diff-field-header">Name</td>
-                                <td class="mission-manager-remote-diff-field-header">Status</td>
-                                <td class="mission-manager-remote-diff-field-header">Modified Time</td>
-                                <td class="mission-manager-remote-diff-field-header">Remote Modified Time</td>
                             </tr>
                         </thead>
 
-                        <tbody><tr><td colspan="6" class="mission-manager-diff-type" id="mission-manager-diff-type-flow" style="background:#fff">Flows</td></tr></tbody>
+                        <tbody><tr><td colspan="2" class="mission-manager-diff-type" id="mission-manager-diff-type-flow" style="background:#fff">Flows</td></tr></tbody>
                         <tbody id="mission-manager-diff-flow"></tbody>
-                        <tr><td colspan="6" class="mission-manager-diff-type" id="mission-manager-diff-type-subflow">Subflows</td></tr></tbody>
+                        <tr><td colspan="2" class="mission-manager-diff-type" id="mission-manager-diff-type-subflow">Subflows</td></tr></tbody>
                         <tbody id="mission-manager-diff-subflow"></tbody>
-                        <tbody><tr><td colspan="6" class="mission-manager-diff-type" id="mission-manager-diff-type-global">Global</tr></tbody>
+                        <tbody><tr><td colspan="2" class="mission-manager-diff-type" id="mission-manager-diff-type-global">Global</tr></tbody>
                         <tbody id="mission-manager-diff-global"></tbody>
                     </table>
                     <br/><button id="mission-manager-remote-diff-push-button" class="ui-button ui-widget ui-corner-all" href="#" style="background: #3c7eff !important; color: #fff !important">Apply Selected Actions</button>
@@ -186,19 +187,18 @@
                 if (!input.checked) continue;
                 const flowType = input.getAttribute('data-flowType');
                 const flowName = input.getAttribute('data-flowName');
-                const localMtime = input.getAttribute('data-mtime');
                 const action = input.getAttribute('data-action') // DEPLOY, DELETE, POST
                 if (action === 'DEPLOY') continue;
 
                 try {
                     $('#fmission-manager-push-progress-label').text(`${action}ing ${flowType} ${flowName || ''}`);
                     await ajax({
-                        url: apiUrl.applyFlow.url + flowType + '/' + flowName + '?mtime=' + localMtime,
+                        url: apiUrl.applyFlow.url + flowType + '/' + flowName,
                         method: apiUrl.applyFlow.method,
                         dataType: "json",
                         contentType: "application/json; charset=utf-8",
                         data: JSON.stringify(await ajax({
-                            url: apiUrl.getFlowInfo.url + flowType + '/' + flowName + '?mtime=' + localMtime, method: apiUrl.applyFlow.method, dataType: "json",
+                            url: apiUrl.getFlowInfo.url + flowType + '/' + flowName, method: apiUrl.applyFlow.method, dataType: "json",
                             contentType: "application/json; charset=utf-8",
                             data: JSON.stringify(targetJson)
                         }))
@@ -251,10 +251,9 @@
                     const localFileState = flowType === 'global' ? opts.localState[flowType] : opts.localState[flowType][flowName];
                     const remoteFileState = flowType === 'global' ? opts.remoteState[flowType] : opts.remoteState[flowType][flowName];
 
-                    let status, statusColor, forceChecked = false, isChecked = false, action, actionDesc;
+                    let statusColor, forceChecked = false, isChecked = false, action, actionDesc;
                     if (!localFileState && remoteFileState) {
                         actionDesc = 'add';
-                        status = "Missing in local";
                         statusColor = '#8CC020';
                         action = 'POST';
                         forceChecked = false;
@@ -265,30 +264,10 @@
                     } else {
                         // Both have
                         if (localFileState.rev !== remoteFileState.rev) {
-                            const localDate = new Date(localFileState.mtime);
-                            const remoteDate = new Date(remoteFileState.mtime);
-                            if (remoteDate > localDate) {
-                                actionDesc = 'update';
-                                status = "Remote file is newer";
-                                statusColor = '#f5e15b';
-                                isChecked = true;
-                            } else if (remoteDate < localDate) {
-                                actionDesc = 'overwrite ⚠️';
-                                status = "Local file is newer"; // "Danger" tell use he will override more recent change
-                                statusColor = '#f54646';
-                            } else {
-                                actionDesc = 'overwrite ⚠️';
-                                status = "Different"; // Not sure, just say it is different. should not happen.
-                                statusColor = '#ff9b9b';
-                            }
+                            actionDesc = 'update';
+                            statusColor = '#f5e15b';
+                            isChecked = true;
                             action = 'POST';
-                        } else if (remoteFileState.hasUpdate) {
-                            // Remote and Local file are the same, but Remote did not load it yet
-                            action = 'DEPLOY';
-                            actionDesc = 'deploy';
-                            forceChecked = true;
-                            status = "Files equal<br/>But not deployed remotely (deploy)<br/>";
-                            statusColor = '#c0d6bd';
                         } else {
                             // Equal files: in this case, do not list row
                             action = null;
@@ -299,20 +278,14 @@
                         foundDifferencesInAnyType = true;
                         foundDifferencesInThisType = true;
 
-                        const lMtime = (localFileState && localFileState.mtime) ? new Date(localFileState.mtime).toLocaleString() : '';
-                        const rMtime = (remoteFileState && remoteFileState.mtime) ? new Date(remoteFileState.mtime).toLocaleString() : '';
-
                         const lRev = localFileState ? localFileState.rev : '';
                         const rRev = remoteFileState ? remoteFileState.rev : '';
 
                         const inputId = `mission-manager-diff-action-${flowType}${flowName ? ('-' + flowName) : ''}`
                         rowsContainerElementForType.append(`
                             <tr ${statusColor ? 'style="background-color: ' + statusColor + '"' : ''}>
-                                <td style="text-align: left"><input id="${inputId}" ${forceChecked ? 'disabled' : ''} ${forceChecked || isChecked ? 'checked' : ''} type="checkbox" data-mtime="${lMtime}" data-remoteName="${opts.remoteName}" data-action="${action}" data-flowName="${flowName}" data-flowType="${flowType}"><label for="${inputId}">${actionDesc}</label></td>
-                                <td>${flowName}</td>
-                                <td>${status}</td>
-                                <td onclick="javascript:alert('Local Rev Checksum: ${lRev}')">${lMtime}</td>
-                                <td onclick="javascript:alert('Remote Rev Checksum: ${rRev}')">${rMtime}</td>
+                                <td style="text-align: left"><input id="${inputId}" ${forceChecked ? 'disabled' : ''} ${forceChecked || isChecked ? 'checked' : ''} type="checkbox"  data-remoteName="${opts.remoteName}" data-action="${action}" data-flowName="${flowName}" data-flowType="${flowType}"><label for="${inputId}">${actionDesc}</label></td>
+                                <td onclick="javascript:alert('Remote Rev Checksum: ${rRev}')">${flowName}</td>
                             </tr>
                             `)
                     }
