@@ -1215,8 +1215,9 @@ async function main() {
             return item.name === "sensecraft-libs"
         })
         let mtime = new Date().toISOString()
-        if (libsMod?.id) {
-            mtime = changeTime(libsMod.id)
+        if (libsMod[0]?.id) {
+            mtime = changeTime(libsMod[0].id)
+            console.log(mtime)
         }
         const output = {
             flow: {}, subflow: {}, global: {
