@@ -1247,7 +1247,7 @@ async function main() {
         }
         let result = []
         switch (type) {
-            case 'flows':
+            case 'flow':
                 var tabObject = body.find(item => item.type === "tab" && item.label === fileName);
                 result = tabObject ? [tabObject].concat(body.filter(item => item.z === tabObject.id)) : [];
                 break;
