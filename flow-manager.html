@@ -28,7 +28,6 @@
 
 <script type="text/javascript">
     (async () => {
-
         // We use this function for ajax and not the jquery one ($.ajax) because on older nodereds, jquery version of this call does not return promise
         function ajax(options) {
             return new Promise(function (resolve, reject) {
@@ -53,7 +52,7 @@
 
         const apiUrl = {
             getDeviceInfo: {
-                url: 'http://192.168.118.71:8090/device/info',
+                url: 'http://127.0.0.1:8090/device/info',
                 method: 'GET'
             },
             getLocalState: {
@@ -61,7 +60,19 @@
                 method: 'GET'
             },
             getRemoteState: {
-                url: 'flow-manager/applicaiton/sate/',
+                url: 'flow-manager/applicaiton/sate/', // :appId
+                method: 'POST',
+            },
+            applyFlow: {
+                url: 'flow-manager/flow-files/', // :type/:fileName
+                method: 'POST',
+            },
+            getFlowInfo: {
+                url: 'flow-manager/applicaiton/', // :type/:fileName
+                method: 'POST'
+            },
+            reloadState: {
+                url: 'flow-manager/states/',
                 method: 'POST',
             }
         }
@@ -165,75 +176,60 @@
         });
 
 
-        // $('#mission-manager-remote-diff-push-button').click(async function () {
-        //     $("#mission-manager-push-progress-dialog").dialog({ title: 'Push in progress...', modal: true });
+        $('#mission-manager-remote-diff-push-button').click(async function () {
+            $("#mission-manager-push-progress-dialog").dialog({ title: 'Push in progress...', modal: true });
 
-        //     const inputs = $('#mission-manager-remote-diff-dialog input');
-        //     let remoteNameToDeploy = null;
-        //     let progress = 0;
-        //     for (const input of inputs) {
-        //         progress++;
-        //         if (!input.checked) continue;
+            const inputs = $('#mission-manager-remote-diff-dialog input');
+            let progress = 0;
+            for (const input of inputs) {
+                progress++;
+                if (!input.checked) continue;
+                const flowType = input.getAttribute('data-flowType');
+                const flowName = input.getAttribute('data-flowName');
+                const localMtime = input.getAttribute('data-mtime');
+                const action = input.getAttribute('data-action') // DEPLOY, DELETE, POST
+                if (action === 'DEPLOY') continue;
 
-        //         const remoteName = input.getAttribute('data-remoteName');
-        //         remoteNameToDeploy = 'remoteName';
+                try {
+                    $('#fmission-manager-push-progress-label').text(`${action}ing ${flowType} ${flowName || ''}`);
+                    await ajax({
+                        url: apiUrl.applyFlow.url + flowType + '/' + flowName + '?mtime=' + localMtime,
+                        method: apiUrl.applyFlow.method,
+                        dataType: "json",
+                        contentType: "application/json; charset=utf-8",
+                        data: JSON.stringify(await ajax({
+                            url: apiUrl.getFlowInfo.url + flowType + '/' + flowName + '?mtime=' + localMtime, method: apiUrl.applyFlow.method, dataType: "json",
+                            contentType: "application/json; charset=utf-8",
+                            data: JSON.stringify(targetJson)
+                        }))
+                    });
+                } catch (e) {
+                    alert(`Failed to ${action} file ${flowType} ${flowName || ''}, Discontinuing.`);
+                    break;
+                }
+                $("#mission-manager-push-progress-progressbar").progressbar({ value: (progress / (inputs.length + 1)) * 100 });
 
-        //         const action = input.getAttribute('data-action') // DEPLOY, DELETE, POST
-        //         if (action === 'DEPLOY') continue;
+            }
 
-        //         const flowType = input.getAttribute('data-flowType');
-        //         const flowName = input.getAttribute('data-flowName');
-        //         const localMtime = input.getAttribute('data-mtime');
+            $('#flow-manager-push-progress-label').text(`Deploying ...`);
+            try {
+                await ajax({
+                    url: apiUrl.reloadState.url,
+                    method: 'POST',
+                    data: JSON.stringify({ "action": "reloadOnly" }),
+                    dataType: "json",
+                    contentType: "application/json; charset=utf-8"
+                });
+            } catch (e) { }
 
-        //         const [localUrl, remoteUrl] = [false, true].map(isRemote => {
-        //             let url = `flow-manager/${isRemote ? ('remotes/' + remoteName + '/') : ''}flow-files/`;
-        //             if (flowType === 'global') url += flowType;
-        //             else {
-        //                 url += `${flowType}s/${flowName}`;
-        //             }
-        //             url += '?mtime=' + localMtime;
-        //             return url;
-        //         })
 
-        //         try {
-        //             $('#fmission-manager-push-progress-label').text(`${action}ing ${flowType} ${flowName || ''}`);
 
-        //             await ajax({
-        //                 url: remoteUrl,
-        //                 ...(action === 'POST' ?
-        //                     {
-        //                         contentType: "text/plain",
-        //                         data: await ajax({ url: localUrl, headers: { accept: 'text/plain' } })
-        //                     }
-        //                     : {}),
-        //                 type: action
-        //             });
-        //         } catch (e) {
-        //             alert(`Failed to ${action} file ${flowType} ${flowName || ''}, Discontinuing.`);
-        //             break;
-        //         }
-        //         $("#mission-manager-push-progress-progressbar").progressbar({ value: (progress / (inputs.length + 1)) * 100 });
-        //     }
+            $("#mission-manager-push-progress-progressbar").progressbar({ value: 100 });
 
-        //     if (remoteNameToDeploy) {
-        //         $('#mission-manager-push-progress-label').text(`Deploying changes to ${remoteNameToDeploy}...`);
-        //         try {
-        //             await ajax({
-        //                 url: `flow-manager/remotes/${remoteNameToDeploy}/states`,
-        //                 method: 'POST',
-        //                 data: JSON.stringify({ "action": "reloadOnly" }),
-        //                 dataType: "json",
-        //                 contentType: "application/json; charset=utf-8"
-        //             });
-        //         } catch (e) { }
 
-        //         $("#mission-manager-push-progress-progressbar").progressbar({ value: 100 });
-        //     }
-
-        //     $("#mission-manager-push-progress-dialog").dialog('close');
-
-        //     $("#mission-manager-remote-diff-dialog").dialog('close');
-        // });
+            $("#mission-manager-push-progress-dialog").dialog('close');
+            $("#mission-manager-remote-diff-dialog").dialog('close');
+        });
 
         function prepareDiffTable(opts) {
             console.log(opts, 'opts')
