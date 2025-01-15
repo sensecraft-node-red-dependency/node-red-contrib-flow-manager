@@ -81,6 +81,26 @@
             }
         }
 
+        RED.comms.subscribe('flow-manager/flow-manager-envnodes-npm-update', function (topic, msgData) {
+            console.log(topic, msgData)
+            if (msgData && msgData.npm_update) {
+                RED.view.redraw();
+                const myNotification = RED.notify(
+                    `The plugin has been updated and will be restarted for you soon`, {
+                    type: "success",
+                    timeout: 30000,
+                    buttons: [
+                        {
+                            text: "Thanks",
+                            click: function (e) {
+                                myNotification.close();
+                            }
+                        }
+                    ]
+                });
+            }
+        });
+
         async function getdeviceInfo() {
             try {
                 // get device info
@@ -230,7 +250,7 @@
             $("#mission-manager-push-progress-dialog").dialog('close');
             $("#mission-manager-remote-diff-dialog").dialog('close');
 
-            if (window.location.href.indexOf('?appId') != -1) window.location.href = window.location.href.slice(0, window.location.href.indexOf('?appId'))
+            // if (window.location.href.indexOf('?appId') != -1) window.location.href = window.location.href.slice(0, window.location.href.indexOf('?appId'))
         });
 
         function prepareDiffTable(opts) {
