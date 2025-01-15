@@ -1243,7 +1243,6 @@ async function main() {
 
         if (libsMod && libsMod.length > 0) {
             const infoParse = JSON.parse(libsMod[0].info)
-            console.log(infoParse && infoParse?.global)
             if (infoParse && infoParse?.global) {
                 const globalInfo = infoParse?.global
                 output.global = {
