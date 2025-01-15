@@ -111,6 +111,9 @@ async function allNpm(flows) {
         "wires": [],
         "l": false,
     }
+
+    const flowFile = await readFlowByNameAndType("global");
+    // console.log(JSON.stringify(flowFile))
     flows.forEach(flow => {
         if (flow.type === "tab") {
             result.z = flow.id
@@ -144,7 +147,10 @@ async function allNpm(flows) {
         }
     });
 
-    result.info = JSON.stringify(uniqueModules)
+    const infoString = {
+        "global": JSON.parse(flowFile.str), "libs": uniqueModules,
+    }
+    result.info = JSON.stringify(infoString)
 
 
     // 查找数组中 type 为 npm 的对象的索引
@@ -154,6 +160,7 @@ async function allNpm(flows) {
         flows[npmIndex] = result;
     } else {
         flows.push(result);
+        console.log("npmIndex === -1")
     }
 
 
@@ -1233,6 +1240,19 @@ async function main() {
         const output = {
             flow: {}, subflow: {}, global: {}
         };
+
+        if (libsMod && libsMod.length > 0) {
+            const infoParse = JSON.parse(libsMod[0].info)
+            console.log(infoParse && infoParse?.global)
+            if (infoParse && infoParse?.global) {
+                const globalInfo = infoParse?.global
+                output.global = {
+                    deployed: true, rev: calculateRevision(JSON.stringify(globalInfo)), mtime: mtime, hasUpdate: false
+                }
+
+            }
+        }
+
         input.forEach(item => {
             if (item.type === 'tab') {
                 var tabObject = input.find(it => it.type === "tab" && it.label === item.label);
@@ -1253,6 +1273,7 @@ async function main() {
             }
             // Add more conditions if there are other types that need to be handled
         });
+
 
         // For demonstration, assign a dummy revision id for each tab and subflow
         /*Object.keys(output.flow).forEach(key => {
@@ -1297,6 +1318,14 @@ async function main() {
                 }
                 break
             case 'global':
+                if (libsMod && libsMod.length > 0) {
+                    const info = libsMod[0]?.info
+                    if (info) {
+                        const infoParse = JSON.parse(info)
+                        result = info.global
+                        result.concat(libsMod)
+                    }
+                }
                 break
             default:
                 break
