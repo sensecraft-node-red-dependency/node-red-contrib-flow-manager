@@ -1,6 +1,6 @@
 {
   "name": "@sensecraft/node-red-contrib-flow-manager",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "node-red": {
     "nodes": {
       "flow-manager": "flow-manager.js"
@@ -19,6 +19,8 @@
     "log4js": "~1.0.1"
   },
   "keywords": [
+    "sensecraft",
+    "seeed",
     "node-red",
     "node",
     "red",
