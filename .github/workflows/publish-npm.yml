@@ -18,7 +18,7 @@ jobs:
           node-version: lts/*
 
       - name: Build step
-        run: 'npm install && npm run build' # 安装依赖并打包
+        run: 'npm install' # 安装依赖并打包
 
       - name: Publish to npm
         run: npm publish --access public
