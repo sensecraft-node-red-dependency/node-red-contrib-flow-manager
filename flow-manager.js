@@ -73,11 +73,12 @@ async function iinstallModeList(info) {
     if (info !== "") {
         let newModules = JSON.parse(info);
         let installList = []
-        if (info.length > 0) {
+        if (newModules?.libs?.length > 0) {
             const oldModules = await getNodeList()
             // 创建一个映射，用于存储旧模块的版本信息
             const oldVersionMap = new Map(oldModules.map(m => [m.module, m.version]));
             // 迭代新模块以找出新增或版本不同的模块
+            newModules = newModules.libs
             const updates = newModules.filter(m => {
                 const isNewOrUpdated = !oldVersionMap.has(m.module) || oldVersionMap.get(m.module) !== m.version;
                 if (oldVersionMap.get(m.module) !== m.version && !update_flag) {
