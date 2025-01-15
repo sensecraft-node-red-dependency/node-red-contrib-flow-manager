@@ -1321,7 +1321,9 @@ async function main() {
                     const info = libsMod[0]?.info
                     if (info) {
                         const infoParse = JSON.parse(info)
-                        result = infoParse.global
+                        if (infoParse?.global) {
+                            result = infoParse.global
+                        }
                         result.concat(libsMod)
                     }
                 }
