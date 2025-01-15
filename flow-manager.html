@@ -56,8 +56,12 @@
 
         const apiUrl = {
             getDeviceInfo: {
-                url: 'http://127.0.0.1:8090/device/info',
+                url: 'http://192.168.118.71:8090/device/info',
                 method: 'GET'
+            },
+            restart: {
+                url: 'http://192.168.118.71:8090/container/restart/',
+                method: 'POST'
             },
             getLocalState: {
                 url: 'flow-manager/states/',
@@ -78,26 +82,36 @@
             reloadState: {
                 url: 'flow-manager/states/',
                 method: 'POST',
-            }
+            },
         }
 
         RED.comms.subscribe('flow-manager/flow-manager-envnodes-npm-update', function (topic, msgData) {
             console.log(topic, msgData)
             if (msgData && msgData.npm_update) {
-                RED.view.redraw();
-                const myNotification = RED.notify(
-                    `The plugin has been updated and will be restarted for you soon`, {
-                    type: "success",
-                    timeout: 30000,
-                    buttons: [
-                        {
-                            text: "Thanks",
-                            click: function (e) {
-                                myNotification.close();
+                // RED.view.redraw();
+                try {
+                    ajax({
+                        url: apiUrl.restart.url + `node-red`,
+                        method: apiUrl.restart.method,
+                        contentType: 'application/json',
+                    });
+
+                    const myNotification = RED.notify(
+                        `The plugin has been updated and will be restarted for you soon`, {
+                        type: "success",
+                        timeout: 30000,
+                        buttons: [
+                            {
+                                text: "Thanks",
+                                click: function (e) {
+                                    myNotification.close();
+                                }
                             }
-                        }
-                    ]
-                });
+                        ]
+                    });
+                } catch (error) {
+                    console.log('Failed to restart:' + JSON.stringify(error))
+                }
             }
         });
 
