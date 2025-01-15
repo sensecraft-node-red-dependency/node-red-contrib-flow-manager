@@ -65,8 +65,10 @@ async function getNodeList() {
     return await PRIVATERED.runtime.nodes.getNodeList({});
 }
 
+let update_flag = false;
+
 async function iinstallModeList(info) {
-    let update_flag = false; // 初始化update_flag为false
+
 
     if (info !== "") {
         let newModules = JSON.parse(info);
@@ -86,14 +88,10 @@ async function iinstallModeList(info) {
             if (updates.length > 0) {
                 for (let i = 0; i < updates.length; i++) {
                     let item = updates[i];
+                    console.log(`install or updat module: ${item.module},version : ${item.version}`);
                     await PRIVATERED.runtime.nodes.addModule({module: item.module, version: item.version});
 
                 }
-            }
-            if (updates.length > 0 && update_flag) {
-                // 发送消息
-                console.log("node red need to restart")
-                RED.comms.publish('flow-manager/flow-manager-envnodes-npm-update', {npm_update: true});
             }
         }
     }
@@ -1062,6 +1060,15 @@ async function main() {
                 flowsToShow = allFlows;
             } else if (reloadOnly) {
                 flowsToShow = [...filterChosenFlows, ...Array.from(onDemandFlowsManager.onDemandFlowsSet)];
+                // 发送消息给前端，让重启客户端
+                if (update_flag) {
+                    // 发送消息
+                    console.log("node red need to restart")
+                    RED.comms.publish('flow-manager/flow-manager-envnodes-npm-update', {npm_update: true});
+                    // 重置状态
+                    update_flag = false
+                }
+
             } else if (removeOndemand) {
                 const newSet = new Set(onDemandFlowsManager.onDemandFlowsSet);
                 for (const undeployFlow of removeOndemand) {
