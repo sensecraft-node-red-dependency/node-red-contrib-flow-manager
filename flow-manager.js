@@ -469,7 +469,7 @@ const revisions = {
 let deployedFlowNames = new Set();
 
 function calculateRevision(str) {
-    return crypto.createHash('md5').update(str).digest("hex");
+    return crypto.createHash('md5').update(str.replace(/\s+/g, '')).digest("hex");
 }
 
 const directories = {};
@@ -924,8 +924,13 @@ async function main() {
         } else {
             return null;
         }
-
-        const fileRev = calculateRevision(flowFile.str);
+        let strOld = flowFile.str
+        let strNew = JSON.parse(flowFile.str)
+        if (Array.isArray(strNew)) {
+            strNew = strNew.filter(item => item.name !== "sensecraft-libs")
+            strOld = JSON.stringify(strNew)
+        }
+        const fileRev = calculateRevision(strOld);
         retVal.rev = fileRev
         retVal.mtime = flowFile.mtime;
         retVal.hasUpdate = !lastLoadedFlowVersionInfo || fileRev !== lastLoadedFlowVersionInfo.rev;
@@ -1217,23 +1222,24 @@ async function main() {
         let mtime = new Date().toISOString()
         if (libsMod[0]?.id) {
             mtime = changeTime(libsMod[0].id)
-            console.log(mtime)
         }
         const output = {
-            flow: {}, subflow: {}, global: {
-                deployed: true, rev: "d751713988987e9331980363e24189ce", mtime: mtime, hasUpdate: false
-            }
+            flow: {}, subflow: {}, global: {}
         };
         input.forEach(item => {
             if (item.type === 'tab') {
+                var tabObject = input.find(it => it.type === "tab" && it.label === item.label);
+                let result = tabObject ? [tabObject].concat(input.filter(it => it.z === tabObject.id && it.name != "sensecraft-libs")) : [];
                 output.flow[item.label] = {
-                    deployed: true, onDemand: false, rev: "", // You need to generate or define the revision id
+                    deployed: true, onDemand: false, rev: calculateRevision(JSON.stringify(result)), // You need to generate or define the revision id
                     mtime: mtime, // You can adjust the mtime as needed
                     hasUpdate: false
                 };
             } else if (item.type === 'subflow') {
+                var tabObject = input.find(it => it.type === "subflow" && it.name === item.name);
+                let result = tabObject ? [tabObject].concat(input.filter(it => it.z === tabObject.id && it.name != "sensecraft-libs")) : [];
                 output.subflow[item.name] = {
-                    deployed: true, rev: "", // You need to generate or define the revision id
+                    deployed: true, rev: calculateRevision(JSON.stringify(result)), // You need to generate or define the revision id
                     mtime: mtime, // You can adjust the mtime as needed
                     hasUpdate: false
                 };
@@ -1242,12 +1248,12 @@ async function main() {
         });
 
         // For demonstration, assign a dummy revision id for each tab and subflow
-        Object.keys(output.flow).forEach(key => {
+        /*Object.keys(output.flow).forEach(key => {
             output.flow[key].rev = "d751713988987e9331980363e24189ce";
         });
         Object.keys(output.subflow).forEach(key => {
             output.subflow[key].rev = "d751713988987e9331980363e24189ce";
-        });
+        });*/
 
         res.status(200).send(output);
     });
@@ -1258,22 +1264,30 @@ async function main() {
         const fileName = req.params.fileName
         const body = req.body
 
-        console.log(type)
-        console.log(fileName)
-
+        let libsMod = body.filter((item) => {
+            return item.name === "sensecraft-libs"
+        })
         if (!fileName || fileName.indexOf('..') !== -1 || fileName.indexOf('/') !== -1 || fileName.indexOf('\\') !== -1 || !type || !body || body.length === 0 || !fileName) {
             return res.status(400).send({error: "Flow file illegal"});
         }
         let result = []
+
+
         switch (type) {
             case 'flow':
                 var tabObject = body.find(item => item.type === "tab" && item.label === fileName);
                 result = tabObject ? [tabObject].concat(body.filter(item => item.z === tabObject.id)) : [];
+                if (result.length > 0 && libsMod && libsMod.length > 0) {
+                    result = result.concat(libsMod)
+                }
                 break;
             case 'subflow':
                 var tabObject = body.find(item => item.type === "subflow" && item.name === fileName);
                 // 如果找到了tabObject，则过滤出所有z属性等于tabObject.id的对象，并包括tabObject本身
                 result = tabObject ? [tabObject].concat(body.filter(item => item.z === tabObject.id)) : [];
+                if (result.length > 0 && libsMod && libsMod.length > 0) {
+                    result = result.concat(libsMod)
+                }
                 break
             case 'global':
                 break
