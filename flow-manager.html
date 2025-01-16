@@ -167,6 +167,13 @@
 
         if (!targetJson) return false;
 
+        // Push progress dialog
+        $('body').prepend(`
+            <div id="mission-manager-push-progress-dialog">
+                <div id="mission-manager-push-progress-label" class="progress-label">Starting download...</div><br/>
+                <div id="mission-manager-push-progress-progressbar"></div>
+            </div>`);
+
         // Add diff popup
         $('body').prepend(`
             <div id="mission-manager-remote-diff-dialog" style="width: auto; text-align: center">
@@ -210,7 +217,6 @@
             }
         });
 
-
         $('#mission-manager-remote-diff-push-button').click(async function () {
             $("#mission-manager-push-progress-dialog").dialog({ title: 'Push in progress...', modal: true });
 
@@ -242,10 +248,9 @@
                     break;
                 }
                 $("#mission-manager-push-progress-progressbar").progressbar({ value: (progress / (inputs.length + 1)) * 100 });
-
             }
 
-            $('#flow-manager-push-progress-label').text(`Deploying ...`);
+            $('#mission-manager-push-progress-label').text(`Deploying ...`);
             try {
                 await ajax({
                     url: apiUrl.reloadState.url,
@@ -254,12 +259,11 @@
                     dataType: "json",
                     contentType: "application/json; charset=utf-8"
                 });
-            } catch (e) { }
-
-
+            } catch (error) {
+                console.log('Failed to reload state:' + JSON.stringify(error))
+            }
 
             $("#mission-manager-push-progress-progressbar").progressbar({ value: 100 });
-
 
             $("#mission-manager-push-progress-dialog").dialog('close');
             $("#mission-manager-remote-diff-dialog").dialog('close');
@@ -356,7 +360,7 @@
             const localState = await ajax({ url: apiUrl.getLocalState.url });
             progressBar.progressbar({ value: 50 });
 
-            progressLabel.text('Retrieving Remote State');
+            progressLabel.text('Applying...');
             try {
                 const remoteState = await ajax({
                     url: apiUrl.getRemoteState.url + `${queryObj.appId}`,
