@@ -263,13 +263,13 @@ PRIVATERED.runtime.storage.saveFlows = async function newSaveFlows(data) {
 
             for (const node of flowNodes) {
                 // Set properties used by envnodes to mared them as flow-manager managed.
-                const foundNodeEnvConfig = getNodesEnvConfigForNode(node);
+                /*const foundNodeEnvConfig = getNodesEnvConfigForNode(node);
 
                 if (foundNodeEnvConfig) {
                     for (const prop in foundNodeEnvConfig) {
                         node[prop] = "flow-manager-managed";
                     }
-                }
+                }*/
                 // delete credentials
                 if (node.credentials != null) {
                     delete node.credentials;
