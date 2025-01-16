@@ -4,6 +4,9 @@ const path = require('path'), fs = require('fs-extra'), bodyParser = require('bo
     child_process = require('child_process'), crypto = require('crypto'), debounce = require('./debounce'),
     axios = require('axios');
 
+let alertStatus = true
+
+
 function execShellCommand(cmd) {
     return new Promise((resolve, reject) => {
         child_process.exec(cmd, (error, stdout, stderr) => {
@@ -1076,7 +1079,7 @@ async function main() {
                     // 重置状态
                     update_flag = false
                 }
-
+                alertStatus = false
             } else if (removeOndemand) {
                 const newSet = new Set(onDemandFlowsManager.onDemandFlowsSet);
                 for (const undeployFlow of removeOndemand) {
