@@ -91,7 +91,7 @@
                 // RED.view.redraw();
                 try {
                     ajax({
-                        url: apiUrl.restart.url + `node-red`,
+                        url: apiUrl.restart.url + `sensecraft-nodered`,
                         method: apiUrl.restart.method,
                         contentType: 'application/json',
                     });
@@ -268,7 +268,7 @@
             $("#mission-manager-push-progress-dialog").dialog('close');
             $("#mission-manager-remote-diff-dialog").dialog('close');
 
-            // if (window.location.href.indexOf('?appId') != -1) window.location.href = window.location.href.slice(0, window.location.href.indexOf('?appId'))
+            if (window.location.href.indexOf('?appId') != -1) window.location.href = window.location.href.slice(0, window.location.href.indexOf('?appId'))
         });
 
         function prepareDiffTable(opts) {
