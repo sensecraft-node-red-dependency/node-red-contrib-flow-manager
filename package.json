@@ -1,6 +1,6 @@
 {
   "name": "@sensecraft/node-red-contrib-flow-manager",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "node-red": {
     "nodes": {
       "flow-manager": "flow-manager.js"
